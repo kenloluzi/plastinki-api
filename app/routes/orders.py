@@ -1,3 +1,11 @@
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.extensions import db
+from app.models import Order, OrderItem, Record
+
+orders_bp = Blueprint("orders", __name__)
+
+
 @orders_bp.post("")
 @jwt_required()
 def create_order():
@@ -15,6 +23,20 @@ def create_order():
     if not items:
         return jsonify({"error": "Cart is empty"}), 400
 
+    # ---- Проверка остатков перед оформлением ----
+    for entry in items:
+        try:
+            rid = int(entry.get("record_id"))
+            qty = max(1, int(entry.get("quantity", 1)))
+        except (TypeError, ValueError):
+            continue
+        record = Record.query.get(rid)
+        if not record:
+            return jsonify({"error": f"Record {rid} not found"}), 400
+        if record.stock < qty:
+            return jsonify({"error": f"Not enough stock for {record.title} by {record.artist}. Available: {record.stock}"}), 400
+    # --------------------------------------------
+
     total = 0.0
     order_items = []
     for entry in items:
@@ -26,9 +48,6 @@ def create_order():
         record = Record.query.get(rid)
         if not record:
             continue
-        # Проверка остатков
-        if record.stock < qty:
-            return jsonify({"error": f"Not enough stock for '{record.title}' by {record.artist}. Available: {record.stock}"}), 400
         line_total = float(record.price) * qty
         total += line_total
         order_items.append(OrderItem(
@@ -38,6 +57,8 @@ def create_order():
             title_snapshot=record.title,
             artist_snapshot=record.artist,
         ))
+        # Уменьшаем остаток на складе
+        record.stock -= qty
 
     if not order_items:
         return jsonify({"error": "No valid items in cart"}), 400
@@ -53,13 +74,22 @@ def create_order():
         items=order_items,
     )
     db.session.add(order)
-    # Уменьшаем stock для каждой позиции
-    for entry in items:
-        rid = int(entry.get("record_id"))
-        qty = max(1, int(entry.get("quantity", 1)))
-        record = Record.query.get(rid)
-        if record:
-            record.stock -= qty
     db.session.commit()
 
     return jsonify(order.to_dict()), 201
+
+
+@orders_bp.get("")
+@jwt_required()
+def list_my_orders():
+    user_id = int(get_jwt_identity())
+    orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
+    return jsonify({"items": [o.to_dict() for o in orders]})
+
+
+@orders_bp.get("/<int:order_id>")
+@jwt_required()
+def get_order(order_id):
+    user_id = int(get_jwt_identity())
+    order = Order.query.filter_by(id=order_id, user_id=user_id).first_or_404()
+    return jsonify(order.to_dict())
