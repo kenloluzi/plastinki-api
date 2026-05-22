@@ -1,11 +1,3 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.extensions import db
-from app.models import Order, OrderItem, Record
-
-orders_bp = Blueprint("orders", __name__)
-
-
 @orders_bp.post("")
 @jwt_required()
 def create_order():
@@ -34,6 +26,9 @@ def create_order():
         record = Record.query.get(rid)
         if not record:
             continue
+        # Проверка остатков
+        if record.stock < qty:
+            return jsonify({"error": f"Not enough stock for '{record.title}' by {record.artist}. Available: {record.stock}"}), 400
         line_total = float(record.price) * qty
         total += line_total
         order_items.append(OrderItem(
@@ -58,22 +53,13 @@ def create_order():
         items=order_items,
     )
     db.session.add(order)
+    # Уменьшаем stock для каждой позиции
+    for entry in items:
+        rid = int(entry.get("record_id"))
+        qty = max(1, int(entry.get("quantity", 1)))
+        record = Record.query.get(rid)
+        if record:
+            record.stock -= qty
     db.session.commit()
 
     return jsonify(order.to_dict()), 201
-
-
-@orders_bp.get("")
-@jwt_required()
-def list_my_orders():
-    user_id = int(get_jwt_identity())
-    orders = Order.query.filter_by(user_id=user_id).order_by(Order.created_at.desc()).all()
-    return jsonify({"items": [o.to_dict() for o in orders]})
-
-
-@orders_bp.get("/<int:order_id>")
-@jwt_required()
-def get_order(order_id):
-    user_id = int(get_jwt_identity())
-    order = Order.query.filter_by(id=order_id, user_id=user_id).first_or_404()
-    return jsonify(order.to_dict())
