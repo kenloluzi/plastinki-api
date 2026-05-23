@@ -56,6 +56,7 @@ def create_order():
             title_snapshot=record.title,
             artist_snapshot=record.artist,
         ))
+        # Уменьшаем остаток
         record.stock -= qty
 
     if not order_items:
@@ -102,6 +103,12 @@ def delete_order(order_id):
 
     if not (user.is_admin or order.user_id == user_id):
         return jsonify({"error": "You don't have permission to delete this order"}), 403
+
+    # Возвращаем количество на склад для каждого товара в заказе
+    for item in order.items:
+        record = Record.query.get(item.record_id)
+        if record:
+            record.stock += item.quantity
 
     db.session.delete(order)
     db.session.commit()
