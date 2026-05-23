@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import Order, OrderItem, Record
+from app.models import Order, OrderItem, Record, User
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -23,7 +23,7 @@ def create_order():
     if not items:
         return jsonify({"error": "Cart is empty"}), 400
 
-    # ---- Проверка остатков перед оформлением ----
+    # Проверка остатков
     for entry in items:
         try:
             rid = int(entry.get("record_id"))
@@ -35,7 +35,6 @@ def create_order():
             return jsonify({"error": f"Record {rid} not found"}), 400
         if record.stock < qty:
             return jsonify({"error": f"Not enough stock for {record.title} by {record.artist}. Available: {record.stock}"}), 400
-    # --------------------------------------------
 
     total = 0.0
     order_items = []
@@ -57,7 +56,6 @@ def create_order():
             title_snapshot=record.title,
             artist_snapshot=record.artist,
         ))
-        # Уменьшаем остаток на складе
         record.stock -= qty
 
     if not order_items:
@@ -93,3 +91,18 @@ def get_order(order_id):
     user_id = int(get_jwt_identity())
     order = Order.query.filter_by(id=order_id, user_id=user_id).first_or_404()
     return jsonify(order.to_dict())
+
+
+@orders_bp.delete("/<int:order_id>")
+@jwt_required()
+def delete_order(order_id):
+    user_id = int(get_jwt_identity())
+    order = Order.query.get_or_404(order_id)
+    user = User.query.get(user_id)
+
+    if not (user.is_admin or order.user_id == user_id):
+        return jsonify({"error": "You don't have permission to delete this order"}), 403
+
+    db.session.delete(order)
+    db.session.commit()
+    return jsonify({"message": f"Order {order_id} deleted successfully"}), 200
