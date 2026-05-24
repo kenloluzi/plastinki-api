@@ -113,4 +113,5 @@ class OrderItem(db.Model):
             "price": float(self.price) if self.price is not None else 0.0,
             "title": self.title_snapshot,
             "artist": self.artist_snapshot,
+            "image_url": self.record.image_url if self.record else None, 
         }
