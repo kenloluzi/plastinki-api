@@ -1,3 +1,9 @@
+from flask import Blueprint, request, jsonify
+from sqlalchemy import or_
+from app.models import Record
+
+records_bp = Blueprint("records", __name__)
+
 @records_bp.get("")
 def list_records():
     q = Record.query
@@ -53,3 +59,19 @@ def list_records():
         "has_next": paginated.has_next,
         "has_prev": paginated.has_prev,
     })
+
+@records_bp.get("/facets")
+def facets():
+    genres = [g[0] for g in Record.query.with_entities(Record.genre).distinct().all() if g[0]]
+    artists = [a[0] for a in Record.query.with_entities(Record.artist).distinct().all() if a[0]]
+    years = [y[0] for y in Record.query.with_entities(Record.year).distinct().all() if y[0]]
+    return jsonify({
+        "genres": sorted(genres),
+        "artists": sorted(artists),
+        "years": sorted(years),
+    })
+
+@records_bp.get("/<int:record_id>")
+def get_record(record_id):
+    record = Record.query.get_or_404(record_id)
+    return jsonify(record.to_dict())
