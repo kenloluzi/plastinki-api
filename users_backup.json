@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "email": "admin@plastinki.local",
+    "name": "Admin",
+    "password_hash": "scrypt:32768:8:1$7utliz4yHClFLflg$ba4d30b998afbf7f31467f3612195e89a7f9a65ba6e2d7eafa881f588910926eae002e0fcb12dd39891c8637df5355228fc8d95b5ef21b928418b53badc38b9c",
+    "is_admin": true,
+    "created_at": "2026-05-22T03:20:35.515880"
+  },
+  {
+    "id": 2,
+    "email": "ken@plastinki.local",
+    "name": "ken",
+    "password_hash": "scrypt:32768:8:1$dWAAQEdMCf7oYhNv$409a15400c99607d97bca2032ba18e89a197b4f38a8c3b1a39c4dd0a9daeedfd1fa837fa87e3a4f8423e3bd099133be2a37e8492e5dec4183a580a47bfe3f7d7",
+    "is_admin": false,
+    "created_at": "2026-05-22T09:08:13.462322"
+  },
+  {
+    "id": 3,
+    "email": "111@11",
+    "name": "111",
+    "password_hash": "scrypt:32768:8:1$ma88BYqQW99dqJq2$aeb61f570a5527f48d95f40d5f88eba89de03968b4bffe15e43e1c46663f6d6de214c9689d14a8de24521e9b9e6ef4ad594a4cc3431335213d2f8f10c793e80e",
+    "is_admin": false,
+    "created_at": "2026-05-23T10:09:41.162958"
+  }
+]

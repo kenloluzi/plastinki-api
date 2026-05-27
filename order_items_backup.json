@@ -1,0 +1,20 @@
+[
+  {
+    "id": 8,
+    "order_id": 8,
+    "record_id": 36,
+    "quantity": 1,
+    "price": "57.00",
+    "title_snapshot": "Eternal Atake 2",
+    "artist_snapshot": "Lil Uzi Vert"
+  },
+  {
+    "id": 13,
+    "order_id": 13,
+    "record_id": 40,
+    "quantity": 5,
+    "price": "58.00",
+    "title_snapshot": "FOR NOTHING",
+    "artist_snapshot": "Nine Vicious"
+  }
+]
