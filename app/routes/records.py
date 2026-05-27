@@ -4,6 +4,7 @@ from app.models import Record
 
 records_bp = Blueprint("records", __name__)
 
+
 @records_bp.get("")
 def list_records():
     q = Record.query
@@ -16,17 +17,11 @@ def list_records():
     price_max = request.args.get("price_max", type=float)
     search = request.args.get("search")
     sort = request.args.get("sort", "newest")
-    condition = request.args.get("condition")
-
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per_page", 12, type=int)
 
     if genre:
         q = q.filter(Record.genre == genre)
     if artist:
         q = q.filter(Record.artist.ilike(f"%{artist}%"))
-    if condition:
-        q = q.filter(Record.condition == condition)
     if year_min is not None:
         q = q.filter(Record.year >= year_min)
     if year_max is not None:
@@ -48,17 +43,9 @@ def list_records():
     else:
         q = q.order_by(Record.created_at.desc())
 
-    paginated = q.paginate(page=page, per_page=per_page, error_out=False)
+    items = q.all()
+    return jsonify({"items": [r.to_dict() for r in items], "count": len(items)})
 
-    return jsonify({
-        "items": [r.to_dict() for r in paginated.items],
-        "count": paginated.total,
-        "page": paginated.page,
-        "pages": paginated.pages,
-        "per_page": paginated.per_page,
-        "has_next": paginated.has_next,
-        "has_prev": paginated.has_prev,
-    })
 
 @records_bp.get("/facets")
 def facets():
@@ -70,6 +57,7 @@ def facets():
         "artists": sorted(artists),
         "years": sorted(years),
     })
+
 
 @records_bp.get("/<int:record_id>")
 def get_record(record_id):
